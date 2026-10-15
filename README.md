@@ -1,99 +1,90 @@
-# Fathom — starter project
+# Fathom — Kindle
 
-This repository is the starting point for building **Fathom**, the game the
-specification under `specs/` describes. Read `specs/overview.md` first; it says
-how the rest of the specification is organized.
+**A little light. A long way down.**
 
-The project is already wired up. It builds on the **Simple 2D** engine, which is
-installed as an ordinary dependency and documents itself under `engine/` — read
-that alongside the specs. What is missing is the game.
+Fathom is a bioluminescent deep-sea maze chase. Graze every plankton mote to
+descend, use sonar to map the flooded corridors, and escape three hunters that
+track light, sound, and the flash of their own flare.
 
-In Fathom the forager carries an outer vision circle, and the maze is drawn only
-inside it: explored ground beyond the circle is blacked out while staying
-remembered underneath. `specs/sensing.md` gives the circle's radius, what is
-drawn inside it, and what shows over the blackout, and the state contract in
-`specs/state.md` already carries `windowRadius` beside the light radius.
+In the **Kindle** dive, explored ground stays remembered, but you can see it only
+through a circular window. Eating expands that window and brightens your light.
+It also makes you easier to find. An amber glimmer might be a harmless drifter
+worth 200 points—or a Lanternjaw wearing the same disguise.
 
-## What you own
+![Fathom's title screen](showcase/title.png)
 
-**`src/game.ts`, and any new files you add beside it.**
+## Run locally
 
-Start by declaring and exporting `FathomState`, exactly as `specs/state.md` fixes
-it, and `FathomDebugApi`, the debug and automation surface
-`specs/instrumentation.md` specifies. The stub in `src/game.ts` is written against
-both names, so the project does not compile until they exist — a fresh workspace
-failing `npm run typecheck` is the starting point, not a broken seed.
+Requires Node.js 22.12 or newer and npm.
 
-`src/game.ts` then exports `game`, a `Game<FathomState, FathomDebugApi>`: three
-functions over that state. `initialize` builds the state and the debug surface
-once and returns them together as `[state, debug]`; `update` takes the current
-state as a read-only view (`DeepReadonly<FathomState>`, from `ts-essentials`) and
-returns the next state, advanced against the frame's delta time in seconds; and
-`render` is handed that next state, read-only again, and draws it. The engine
-holds the state by value and replaces it with whatever `update` returns, so a
-frame builds the next state from the current one rather than writing into it,
-and the type is what guarantees that rendering changes nothing. All three
-currently throw `"not implemented"`. Implement them.
+```sh
+npm ci
+npm run dev
+```
 
-**The art comes from the engine.** The frames under `assets/` are loaded through
-the engine's asset loader, which resolves every path under the `assets/` root and
-against the page the build is served from — read the engine's asset documentation
-for the API. `specs/assets.md` states what each sheet holds and how a frame is
-drawn.
+Open the local URL Vite prints. The game runs entirely in the browser, with no
+backend, credentials, external fonts, or runtime services.
 
-The debug surface is a required deliverable. The engine returns it from
-`engine.debug` exactly as `initialize` handed it over, and that is how the game
-is driven from code, so it is present and exactly as `specs/instrumentation.md`
-specifies. Because nothing holds a writable state, its operations are written in
-the shape of `update`: a pose takes the current state and returns the next, and a
-caller applies it through `engine.apply((s) => debug.beginPlay(s))`; a reading
-takes the state and returns what it read, as `debug.snapshot(engine.state)`.
-Nothing is published to the page.
+## Controls
 
-`FathomState` **is a contract**. Keep every field, under the name, type, and
-meaning `specs/state.md` gives it. You may add fields, but only for data you can
-rebuild from the declared ones: the declared fields are the whole of the
-authoritative state, and the surface's `reset()` restores exactly those.
+| Control | Action |
+| --- | --- |
+| Arrow keys / WASD | Swim; release to stop. Turns buffer until a tile center. |
+| Space | Send a sonar pulse. It reveals passages around corners but can alert Gloamfins. |
+| Shift | Release ink to break a light-hunter's fix. |
+| P / Escape | Pause / resume. |
+| Up / Down, Enter / Space | Select and confirm menu items. |
+| Escape | Go back. |
+| M | Toggle sound on any screen. |
+| Backtick | Toggle the engine's read-only diagnostics overlay. |
 
-Tests you write belong beside your sources as `src/**/*.test.ts`. `npm test`
-runs them in process, with coverage over `src/`. The engine's documentation
-carries a complete worked example of testing a game this way.
+Menus also accept mouse and touch. Touching the game brings up the engine's
+direction pad and action buttons: **A** is sonar, **B** is ink.
 
-## What you must not edit
+Clear all plankton for a 500-point bonus and the next depth. Depths add hunters
+and shorten sonar range. Your three reserve lives are additional to the current
+attempt. A catch preserves eaten plankton, your score, and the maze's remembered
+terrain.
 
-- **`src/main.ts`** — the fixed entry point. It creates the engine over the
-  page's canvas, binds `game` to it, and runs.
-- **`src/constants.ts`** — every figure the specification fixes: the stage and
-  the tile grid, the fixed timestep, the maze proportions, the speeds, the
-  sensing figures, the predators' senses and timings, the scoring, the screen
-  copy, the action names, and the cue names. Read from it.
-- **`index.html`** — the page and the canvas the engine fits the stage into.
-- **`assets/`** — the art seeded with the project.
-- **The toolchain** — `package.json`, `tsconfig.json`, `vite.config.ts`,
-  `vitest.config.ts`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`,
-  and `.gitignore`.
-- **`.vendor/`** — the vendored engine.
+## Production build
 
-Add dependencies to `package.json` if you genuinely need them, and commit the
-`package-lock.json` — the build is installed with `npm ci`. Leave the existing
-entries alone.
+```sh
+npm run build
+npm run preview
+```
 
-## Commands
+`dist/` is the complete static site, including `index.html` and all seeded art.
+Serve that directory as-is at a server root or beneath a sub-path ending in `/`.
+All runtime URLs are page-relative.
 
-- `npm run dev` — serves the game with hot reload.
-- `npm run build` — type-checks, then emits the static site into `dist/`.
-- `npm run preview` — serves `dist/` for a final check.
-- `npm run typecheck` — `tsc --noEmit`.
-- `npm run lint` — ESLint.
-- `npm run format` — Prettier, in check mode.
-- `npm test` — Vitest over `src/**/*.test.ts`, with coverage.
+## Verification
 
-## What the finished repository satisfies
+```sh
+npm run typecheck
+npm run lint
+npm run format
+npm test
+```
 
-- `npm run build` produces `dist/` with `index.html` at its root, and that
-  directory runs as-is on any static host.
-- `npm run typecheck`, `npm run lint`, `npm run format`, and `npm test` all pass.
-  The same four commands are run over the repository you leave behind.
-- **Replace this file** with the `README.md` `specs/overview.md` asks the
-  finished build to ship: what the game is, how to install it, how to run it in
-  development, how to produce the production build, and the controls.
+The tests instantiate the Simple 2D engine with a real in-process canvas,
+scripted clocks, and dispatched input events. They exercise maze proportions,
+frame-rate independence, continuous movement and wrapping, screen transitions,
+visibility, hunting senses, cooldowns, scoring, catches, and descent. Coverage
+and test reports are written to `coverage/`.
+
+## Source map
+
+- `src/game.ts`: engine registration, input, fixed-step accumulation, and public type exports.
+- `src/model.ts`: complete state and debug contracts.
+- `src/world.ts`: maze, center-line travel, shortest paths, state construction, and derived readings.
+- `src/simulation.ts`: render-free 120 Hz simulation, senses, hunters, sonar, food, and progression.
+- `src/debug.ts`: immutable scenario poses and JSON snapshots, available through `engine.debug`.
+- `src/render.ts`: pixel-art maze and creatures, circular visibility mask, effects, menus, and HUD.
+- `src/game.test.ts`: engine-driven unit tests.
+
+The engine owns the browser loop, canvas fit, input, audio synthesis, asset
+loading, recording, and diagnostic overlay. All evolving game data is held in
+the engine's state value; rendering is read-only. The debug surface is returned
+to the engine and is never installed on the page.
+
+See [the showcase](showcase/showcase.md) for captured gameplay and its carousel.
